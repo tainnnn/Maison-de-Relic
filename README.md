@@ -99,24 +99,6 @@ The server recalculates prices, checks stock, and verifies payment before creati
 
 Open [maison-de-relic-demo.vercel.app](https://maison-de-relic-demo.vercel.app/), select **Customer** on `/login`, then open a product, add it to Cart, and complete the simulated checkout. The order appears in `/orders`. Sign out, select **Staff**, and use `/admin/orders` to move it through packing, shipped, and delivered. Return as Customer to confirm receipt. This works in one browser: inventory and orders are stored in that browser's `localStorage` and are not shared with other visitors or devices. Clearing the site's browser storage starts a fresh demo. No PostgreSQL, Omise, or account registration is needed online.
 
-## Run and review locally
-
-This portfolio copy uses its **own Docker project and database**. It never connects to the original team's database or Omise account. Install Docker Desktop, copy `portfolio.env.example` to `portfolio.env`, and replace both placeholder secrets with different long random values. Then run from this repository root:
-
-```bash
-docker compose --env-file portfolio.env -f compose.portfolio.yml up -d --build
-```
-
-The frontend is at `http://localhost:5510`, and the proxied API health check is at `http://localhost:5510/api/health`. To inspect the sample screens without signing in, append these paths to the frontend URL: `/cart?preview=1`, `/checkout?preview=1`, `/orders?preview=1`, `/order-detail?preview=1&id=PREVIEW-1006`, and `/admin/orders?preview=1`. Use the header theme button to switch to dark mode.
-
-The sign-in form pre-fills a seeded **Customer** account; switch its account selector to **Staff** to test admin fulfillment. In this local Docker setup, Cart, Checkout, Orders, and Admin Orders work against the isolated database. Wishlist, Reviews, Refunds, Support, Events, and Sales can also use that local data. Registration, password reset, profile and address editing, account administration, catalog editing, and uploads are disabled. The Team page retains its layout and credits but uses blank gradient placeholders instead of personal portraits. Local demo accounts share the isolated database, so use sample information only. To stop only this portfolio stack, run `docker compose --env-file portfolio.env -f compose.portfolio.yml down`.
-
-If the shared sample inventory is depleted, the owner can reset **only the portfolio database** with `docker compose --env-file portfolio.env -f compose.portfolio.yml down -v` and then run the startup command again. This deletes all portfolio demo orders and changes.
-
-For optional deployment of the local API-backed version on a Docker host, set `PORTFOLIO_PUBLIC_URL` to its HTTPS origin and route that origin to the portfolio web container. Keep `portfolio.env` private. The Vercel link above uses the separate browser-only demo.
-
-For a full backend walkthrough with local accounts, products, expected results, and failure cases, see the [R5 demo test cases](docs/testing/r5/README.md). The team also provides a [setup guide](docs/setup.md) and [complete API documentation](docs/api.md). **Never commit `portfolio.env`, `.env` files, or Omise secret keys.**
-
 ## Contributions merged into the team project
 
 - [PR #68 — Cart, Checkout, Payment, Orders, and Admin Orders](https://github.com/PhakawatL/maison-de-relic/pull/68)
