@@ -1,154 +1,120 @@
-# Maison de Relic — เว็บร้านของสะสม
+# Maison de Relic
 
-โครงงานวิชา ITDS241/242 มหาวิทยาลัยมหิดล
+Maison de Relic is a collectibles storefront built as a five-person project for **ITDS241/242 at Mahidol University**. Customers can discover products, place orders, track deliveries, and access after-sales services. The frontend uses HTML, CSS, and vanilla JavaScript; the API uses Node.js 24 and Express with PostgreSQL 16. Docker Compose runs the services locally.
 
-| ส่วน | เทคโนโลยี | รันที่ |
+![Maison de Relic homepage in dark mode](docs/portfolio/homepage-dark.png)
+
+*The homepage was developed by R4. It is shown here to introduce the shared project before the R5 feature walkthrough.*
+
+Explore the [team architecture](docs/architecture.png), [API documentation](docs/api.md), and [wireframe guide](docs/wireframe.md).
+
+## Team credits
+
+This is a collaborative project. This README focuses on the **R5 features I owned** and identifies the systems built by my teammates that those features use.
+
+| Role | Contributor | Main responsibilities |
 |---|---|---|
-| หน้าเว็บ | HTML + CSS + Vanilla JavaScript | กล่อง `web` (nginx) ใน Docker · ออนไลน์บน Vercel |
-| API | Node.js 24 + Express | กล่อง `api` ใน Docker |
-| ฐานข้อมูล | PostgreSQL 16 | กล่อง `db` ใน Docker |
+| R1 · Tech Lead / After-sales | [Phakawat (Peem)](https://github.com/PhakawatL) | Project foundation, Team page, Wishlist, Reviews, Refunds, Support |
+| R2 · Identity / Admin Users | [Suphawit (Bonus)](https://github.com/SuphawitBonus) | Authentication, accounts, authorization, addresses, admin users |
+| R3 · Catalog / Inventory | [Yanawut (Yu)](https://github.com/yarnawutthongyoung-hue) | Products, categories, inventory, sales reporting |
+| R4 · Discovery / Recommender | [Donnyakrit (Pleng)](https://github.com/N3ptz) | Homepage, Search, Product Detail, Events, recommendations |
+| **R5 · Cart / Checkout / Orders** | **[Tain](https://github.com/tainnnn)** | **Cart, Checkout, test payments, order history and details, admin fulfillment** |
 
-หน้าเว็บกับ API รันแยกกัน และคุยกันผ่าน `fetch()` เท่านั้น ตามข้อกำหนดของวิชา
+The [original team repository](https://github.com/PhakawatL/maison-de-relic) retains everyone's development history. This copy presents the shared project with a closer look at my contributions.
 
-![แผนผังระบบ](docs/architecture.png)
+## My R5 work: from cart to delivery
 
-(ไฟล์ภาพสำหรับใส่รายงาน: `docs/architecture.png` / แก้ไขได้ที่ `docs/architecture.svg`)
+**Select products → Cart → Checkout → Payment → Order and stock deduction → Admin fulfillment → Customer receipt confirmation.** After delivery, R1's Review and Refund features use the order data; R3's Sales feature uses completed sales; and R4's Events feature receives cart and purchase activity.
 
-**Wireframe (Figma):** [ITDS241 - เว็บขายของสะสม](https://www.figma.com/design/Y7uNT37pCWR2ry4DyerwUO/ITDS241---เว็บขายของสะสม--Wireframe-?node-id=0-1) · รายละเอียด component ดูที่ [`docs/wireframe.md`](docs/wireframe.md)
+> All screenshots below show the **dark theme in Preview mode with sample data**. Preview demonstrates the interface without signing in. It does not create orders or collect payments.
 
----
+### Cart and empty cart — `/cart`
 
-## เริ่มต้นครั้งแรก
+![Shopping Cart in dark mode](docs/portfolio/r5-cart-dark.png)
 
-> **ยังไม่เคยลงโปรแกรม?** ทำตาม [คู่มือติดตั้งเครื่อง (Windows)](docs/setup.md) ทีละขั้น มีวิธีแก้ปัญหาที่เจอบ่อยและ checklist ให้ติ๊ก
+The cart shows each product's image, name, price, quantity, and total. Customers can select only the items they want to check out, adjust quantities, remove one item, or remove several at once. An empty cart has a dedicated state.
 
-**ต้องติดตั้งก่อน:** [Docker Desktop](https://www.docker.com/products/docker-desktop/), Git และ VS Code
-(แนะนำให้ลง [Node.js 24.21.0](https://nodejs.org/en/download) ไว้ด้วย เพื่อให้ VS Code ช่วยเติมโค้ดได้ แต่ตัวระบบรันใน Docker ทั้งหมด)
+![Empty Cart in dark mode](docs/portfolio/r5-cart-empty-dark.png)
+
+The backend keeps one cart per customer, combines repeated additions of the same product, and checks quantities against available stock. **Adding to the cart does not reserve or deduct stock**; stock changes when payment succeeds and the order is created. A successful addition queues an `add_to_cart` event for R4.
+
+**Cart APIs:** `GET /api/cart`, `POST /api/cart/items`, `PATCH /api/cart/items/:productId`, `DELETE /api/cart/items/:productId`, and `POST /api/cart/item-removals`.
+
+### Checkout and payment — `/checkout`
+
+![Checkout in dark mode](docs/portfolio/r5-checkout-dark.png)
+
+Checkout includes **only the selected cart items**. The customer chooses an address from R2's address system, selects a delivery method and payment method, and reviews a server-calculated total. Standard shipping costs **THB 40** and becomes free at a product subtotal of **THB 1,500**; express shipping costs **THB 80**. The discount shown in the original wireframe was illustrative and is not applied by the application.
+
+Payments support **Omise Test PromptPay QR** and **Omise Test TrueMoney Wallet**. The backend creates a payment attempt and independently checks its status with Omise. A `pending` attempt creates no order; a `failed` attempt deducts no stock; a `successful` attempt creates the order and deducts stock. Rechecking the same attempt returns the existing order rather than creating another one. Payment test controls are available only in development.
+
+When both Omise keys are absent, the isolated **portfolio demo** uses offline payment even though its server runs with production security settings. It creates a demo order in its own database but does not collect money. The original team implementation also supports Omise Test; live payments and credit cards are outside this portfolio deployment.
+
+**Checkout APIs:** `POST /api/orders/quotes`, `POST /api/orders/payment-attempts`, `GET /api/orders/payment-attempts/:attemptId`, and `POST /api/orders/payment-attempts/:attemptId/sync`. The offline demo flow also uses `POST /api/orders` when enabled. Request and response details are in the [API contract](docs/api.md).
+
+### Purchase history — `/orders`
+
+![Purchase History in dark mode](docs/portfolio/r5-orders-dark.png)
+
+Purchase history shows product imagery and names, quantities, order dates, totals, delivery methods, and status. Customers can filter orders and open their details. A dedicated empty state guides customers who have not placed an order.
+
+![Empty Purchase History in dark mode](docs/portfolio/r5-orders-empty-dark.png)
+
+**API:** `GET /api/orders`. The backend limits results to the signed-in customer's own orders.
+
+### Order detail — `/order-detail?id=…`
+
+![Order Detail in dark mode](docs/portfolio/r5-order-detail-dark.png)
+
+The detail page shows the purchased items and their prices at purchase time, the shipping address, payment and tracking information, and the progress **paid → packing → shipped → delivered → completed**. The customer can confirm receipt after delivery and follow links to R1's Review or Refund flows when eligible.
+
+The backend stores snapshots of product names, prices, and the address so past orders remain accurate if catalog or account details change. Every transition is recorded in `order_status_log`; R1 uses the `delivered` timestamp to calculate the seven-day refund window.
+
+**Order APIs:** `GET /api/orders/:id` and `POST /api/orders/:id/receipt`. Customers can access only their own orders.
+
+### Admin orders — `/admin/orders`
+
+![Admin Orders in dark mode](docs/portfolio/r5-admin-orders-dark.png)
+
+Staff can search by order ID, recipient, or tracking number; filter by status; choose the number of orders per page; and inspect an order. Fulfillment follows **paid → packing → shipped → delivered**. A carrier and tracking number are required before shipping. The API rejects stale updates if another staff member has already changed the order.
+
+![Admin Order Detail in dark mode](docs/portfolio/r5-admin-detail-dark.png)
+
+**Admin APIs:** `GET /api/admin/orders`, `GET /api/admin/orders/:id`, and `PATCH /api/admin/orders/:id/fulfillment`.
+
+## Integrations and data integrity
+
+| Teammate system | How R5 integrates with it |
+|---|---|
+| R2 Authentication / Addresses | Checks identity and permissions; uses a customer's address at checkout |
+| R3 Products / Inventory / Sales | Reads products and stock; calls `applyStockChange` in the order transaction; supplies sales data |
+| R4 Events | Queues `add_to_cart` and `purchase` through an outbox; development also supports Omise Test purchase events |
+| R1 Reviews / Refunds | Supplies Order/OrderItem data and the `delivered` time; links to eligible after-sales actions |
+
+The server recalculates prices, checks stock, and verifies payment before creating an order. Order creation, order items, stock deduction, and status logging run in a database transaction. Repeated payment confirmation must not create or charge an order twice. Status updates check the current state and version to avoid overwriting another staff member's changes.
+
+## Run and review locally
+
+This portfolio copy uses its **own Docker project and database**. It never connects to the original team's database or Omise account. Install Docker Desktop, copy `portfolio.env.example` to `portfolio.env`, and replace both placeholder secrets with different long random values. Then run from this repository root:
 
 ```bash
-git clone https://github.com/PhakawatL/maison-de-relic.git
-cd maison-de-relic
-docker compose up --build
+docker compose --env-file portfolio.env -f compose.portfolio.yml up -d --build
 ```
 
-> ต้องเปิดแอป Docker Desktop ไว้ก่อน ครั้งแรกจะใช้เวลาโหลดสักพัก
+The frontend is at `http://localhost:5510`, and the proxied API health check is at `http://localhost:5510/api/health`. To inspect the sample screens without signing in, append these paths to the frontend URL: `/cart?preview=1`, `/checkout?preview=1`, `/orders?preview=1`, `/order-detail?preview=1&id=PREVIEW-1006`, and `/admin/orders?preview=1`. Use the header theme button to switch to dark mode.
 
-พอขึ้นข้อความ `API พร้อมใช้งาน` ก็เปิดได้เลย
+The sign-in form pre-fills a seeded **Customer** account; switch its account selector to **Staff** to test admin fulfillment. Cart, Checkout, Orders, and Admin Orders work against the isolated database. Wishlist, Reviews, Refunds, Support, Events, and Sales can also use that demo data. Registration, password reset, profile and address editing, account administration, catalog editing, and uploads are disabled. The Team page retains its layout and credits but uses blank gradient placeholders instead of personal portraits. Public demo accounts share data, so use sample information only; visitors may see changes made by earlier visitors. To stop only this portfolio stack, run `docker compose --env-file portfolio.env -f compose.portfolio.yml down`.
 
-| เปิดที่ | คืออะไร |
-|---|---|
-| http://localhost:5500 | หน้าเว็บ (หน้าแรกต้องขึ้นว่า "API เชื่อมต่อแล้ว · ฐานข้อมูล: ok") |
-| http://localhost:3000/api/health | API |
-| `localhost:5432` user/pass `postgres`/`postgres` | ฐานข้อมูล (เปิดด้วย DBeaver/TablePlus ได้) |
+If the shared sample inventory is depleted, the owner can reset **only the portfolio database** with `docker compose --env-file portfolio.env -f compose.portfolio.yml down -v` and then run the startup command again. This deletes all portfolio demo orders and changes.
 
-ทุกครั้งที่เปิด ระบบจะสร้าง/อัปเดตตาราง (migration) และใส่ข้อมูลตัวอย่าง (seed) ให้เอง
+For deployment on a Docker host, set `PORTFOLIO_PUBLIC_URL` to the site's HTTPS origin and route that origin to the portfolio web container. Keep `portfolio.env` private. This is a self-hosted frontend and API; a static-only host cannot run the authenticated checkout flow.
 
-## ทำงานทุกวัน
+For a full backend walkthrough with local accounts, products, expected results, and failure cases, see the [R5 demo test cases](docs/testing/r5/README.md). The team also provides a [setup guide](docs/setup.md) and [complete API documentation](docs/api.md). **Never commit `portfolio.env`, `.env` files, or Omise secret keys.**
 
-```bash
-git pull
-docker compose up
-```
+## Contributions merged into the team project
 
-- แก้โค้ด **backend** แล้ว API รีสตาร์ตเอง
-- แก้โค้ด **frontend** แล้วกด refresh หน้าเว็บ
-- ปิด: กด `Ctrl + C` หรือ `docker compose down`
+- [PR #68 — Cart, Checkout, Payment, Orders, and Admin Orders](https://github.com/PhakawatL/maison-de-relic/pull/68)
+- [PR #69 — Offline demo payment, Events, and review follow-ups](https://github.com/PhakawatL/maison-de-relic/pull/69)
+- [PR #70 — Omise test stability](https://github.com/PhakawatL/maison-de-relic/pull/70)
 
-### คำสั่งอื่น
-
-| คำสั่ง | ใช้ทำอะไร |
-|---|---|
-| `docker compose up --build --renew-anon-volumes` | หลังมีคนเพิ่ม package ใน `backend/package.json` |
-| `docker compose exec api npm run db:migrate` | รัน migration ใหม่โดยไม่ต้องปิดระบบ |
-| `docker compose exec api npm run db:reset` | ล้างฐานข้อมูลบนเครื่องแล้วสร้างใหม่ทั้งหมด |
-| `docker compose exec api npm test` | รัน test |
-| `docker compose logs -f api` | ดู log ของ API |
-| `docker compose down -v` | ปิดและลบข้อมูลในฐานข้อมูลทิ้ง |
-
-ถ้าลง Node ไว้ ใช้คำสั่งลัดแทนได้ เช่น `npm run dev`, `npm run db:reset`, `npm test` (ดูใน `package.json`)
-
-### เจอปัญหา
-
-| อาการ | วิธีแก้ |
-|---|---|
-| `port is already allocated` | มีโปรแกรมอื่นใช้ port อยู่ สร้างไฟล์ `.env` ที่ root แล้วใส่ `DB_PORT=5433` (หรือ `API_PORT` / `WEB_PORT`) |
-| `Cannot find module ...` หลัง `git pull` | มีคนเพิ่ม package ให้รัน `docker compose up --build --renew-anon-volumes` |
-| แก้ backend แล้วไม่รีสตาร์ต (มักเจอบน Windows) | รัน `docker compose restart api` |
-| อยากเริ่มฐานข้อมูลใหม่หมด | `docker compose down -v` แล้ว `docker compose up` |
-
----
-
-## โครงสร้าง
-
-```
-docker-compose.yml        เปิดทั้งระบบ 3 กล่อง: db, api, web
-docker/web/nginx.conf     ตั้งค่าเว็บเซิร์ฟเวอร์ของกล่อง web
-
-frontend/                 หน้าเว็บ (กล่อง web / ออนไลน์บน Vercel)
-├─ *.html                 หน้าบังคับ 7 หน้า: index, login, search, detail, team, admin/products, admin/users
-├─ css/base.css           สไตล์กลาง สี ฟอนต์ ปุ่ม ฟอร์ม
-└─ js/
-   ├─ config.js           URL ของ API
-   ├─ api.js              ตัวเรียก API กลาง (ทุกหน้าต้องเรียกผ่านไฟล์นี้)
-   ├─ layout.js           header + footer กลาง
-   ├─ utils.js            escapeHtml, formatBaht
-   └─ pages/              โค้ดของแต่ละหน้า
-
-backend/                  API (กล่อง api)
-├─ Dockerfile             สูตรสร้างกล่อง api (Node 24.21.0)
-├─ src/
-│  ├─ app.js              ประกอบ middleware + routes
-│  ├─ server.js           จุดเริ่มรัน
-│  ├─ config/env.js       อ่านค่าจาก .env
-│  ├─ db/pool.js          query(), withTransaction()
-│  ├─ middleware/         errorHandler (+ auth ของ R2)
-│  ├─ utils/AppError.js   ใช้ throw error ตามรูปแบบกลาง
-│  └─ modules/            แบ่งโฟลเดอร์ตามเจ้าของงาน (ดู modules/README.md)
-├─ db/migrations/         โครงสร้างตาราง (ไฟล์ .sql เรียงเลข)
-├─ db/seeds/              ข้อมูลตัวอย่าง
-└─ test/
-
-docs/
-├─ api.md                 ข้อตกลง API + รายการ endpoint
-├─ setup.md               คู่มือติดตั้งเครื่อง (Windows) ทีละขั้น
-├─ deploy.md              วิธีตั้งค่า Vercel และ GitHub
-├─ wireframe.md           ลิงก์ Figma ไปทุกหน้าจอ แยกตามคนรับผิดชอบ + รายการ component
-└─ database/              ER Diagram, Data Dictionary
-```
-
----
-
-## กติกาทีม
-
-1. **ห้าม push เข้า `main` ตรง ๆ** ให้แตก branch แล้วเปิด Pull Request (PR) ทุกครั้ง
-   - `main` ถูกล็อกด้วยกฎ `protect-main` แล้ว ถ้า push ตรงจะถูก GitHub ปฏิเสธ
-   - ข้อยกเว้นเดียว: R1 (Tech Lead) push ตรงได้**เฉพาะงานเอกสาร** (`README.md`, `docs/`)
-   - **โค้ดทุกอย่าง** (`frontend/`, `backend/`, `docker-compose.yml`, migration ฯลฯ) ทุกคนรวม R1 ต้องผ่าน PR
-2. ตั้งชื่อ branch เป็น `<ประเภท>/<ตำแหน่ง>-<เรื่อง>` เช่น `feat/r1-wishlist`, `fix/r3-stock-count`
-3. PR ต้องให้เพื่อนอนุมัติอย่างน้อย 1 คน และ CI ต้องผ่านทั้ง `backend` และ `docker` (เครื่องหมายถูกสีเขียว) ระบบบังคับให้ ปุ่ม Merge จะกดไม่ได้จนกว่าจะครบ และคนเปิด PR อนุมัติ PR ตัวเองไม่ได้
-4. ก่อนเริ่มงานทุกวัน ให้ `git pull` แล้ว `docker compose up` (ระบบ migrate ให้เอง)
-5. แก้เฉพาะโฟลเดอร์ของตัวเอง ถ้าต้องแก้ของคนอื่นให้คุยกันก่อน
-6. ห้าม commit ไฟล์ `.env` หรือรหัสผ่าน
-7. เปลี่ยนโครงสร้างตารางให้เพิ่มไฟล์ migration ใหม่ ห้ามแก้ไฟล์เก่า
-
-branch แรกของแต่ละคนสร้างไว้ให้แล้ว (ดูในคอมเมนต์ของ Issue ตัวเอง) งานถัด ๆ ไปให้แตก branch เองแบบนี้
-
-```bash
-git checkout main && git pull
-git checkout -b feat/r1-wishlist
-# ... เขียนโค้ด (เปิด docker compose up ทิ้งไว้) ...
-git add .
-git commit -m "R1: เพิ่ม API wishlist"
-git push -u origin feat/r1-wishlist
-# แล้วเปิด Pull Request บน GitHub
-```
-
-## ใครดูแลอะไร
-
-| ตำแหน่ง | ใคร | GitHub | หน้าที่ |
-|---|---|---|---|
-| R1 · Tech Lead · After-sales | ภควรรษ (Peem) | @PhakawatL | โครงระบบ, Team page, Wishlist, Review, Refund, Support |
-| R2 · Identity · Admin Users | ศุภวิชญ์ (Bonus) | @SuphawitBonus | Login, จัดการผู้ดูแล, สมัครสมาชิก, โปรไฟล์ |
-| R3 · Catalog · Inventory | ญาณวุฒิ (Yu) | @yarnawutthongyoung-hue | จัดการสินค้า, สต็อก, สรุปยอดขาย |
-| R4 · Discovery · Recommender | ดนยกฤตย์ (Pleng) | @N3ptz | Home, Search, Detail, ระบบแนะนำ |
-| R5 · Cart · Checkout · Orders | นรบดี | @tainnnn | ตะกร้า, ชำระเงิน (จำลอง), คำสั่งซื้อ |
+The screenshots in `docs/portfolio/` were captured from the project's Preview pages. Credit for product imagery and UI components developed by teammates remains with their original creators, as shown in the repository history.

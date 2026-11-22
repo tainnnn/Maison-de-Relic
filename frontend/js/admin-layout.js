@@ -29,13 +29,10 @@ initTheme();
 // เมนูซ้าย — เพิ่ม/ลบหน้าแอดมินที่นี่ที่เดียว (ชื่อเมนูอยู่ใน locales/*.js หมวด admin.*)
 // ownerOnly: true = แสดงเฉพาะ owner (เมนูขึ้นหลังรู้ว่าใครล็อกอิน — API ก็กันสิทธิ์อีกชั้น)
 const ADMIN_NAV = [
-  { href: '/admin/products', key: 'admin.nav.products', icon: 'box' },
   { href: '/admin/orders', key: 'nav.adminOrders', icon: 'box' },
   { href: '/admin/sales', key: 'admin.nav.sales', icon: 'chart' },
-  { href: '/admin/users', key: 'admin.nav.users', icon: 'users' },
   { href: '/admin/reports', key: 'admin.nav.reports', icon: 'flag' },
   { href: '/admin/refunds', key: 'admin.nav.refunds', icon: 'refund' },
-  { href: '/admin/activity', key: 'admin.nav.activity', icon: 'history', ownerOnly: true },
   { href: '/', key: 'admin.nav.backToSite', icon: 'back' },
 ];
 
@@ -70,7 +67,7 @@ function renderTopbar() {
   el.classList.add('admin-topbar');
   el.innerHTML = `
     <div class="container admin-topbar-inner">
-      <a class="brand" href="/admin/products">Maison de Relic</a>
+      <a class="brand" href="/admin/orders">Maison de Relic</a>
       <span class="admin-badge">${t('admin.brandTag')}</span>
       <div class="admin-topbar-actions">
         <div class="lang-switch" role="group" aria-label="${t('lang.label')}">

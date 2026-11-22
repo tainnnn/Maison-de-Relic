@@ -6,10 +6,11 @@ import { requireLoginPage } from '../auth-guard.js';
 import { clearErrors, errorText, fieldError, showErrors, whileBusy } from '../forms.js';
 import { applyI18n, onLangChange, t } from '../i18n.js';
 import { escapeHtml } from '../utils.js';
+import { PORTFOLIO_DEMO } from '../config.js';
 
 applyI18n();
 const me = await requireLoginPage(); // ยังไม่ล็อกอิน → /login แล้วกลับมาหน้านี้
-const canEdit = me.is_email_verified;
+const canEdit = me.is_email_verified && !PORTFOLIO_DEMO;
 
 const pageAlert = document.getElementById('page-alert');
 const profileForm = document.getElementById('profile-form');
@@ -19,6 +20,12 @@ const addBtn = document.getElementById('add-address-btn');
 const addressDialog = document.getElementById('address-dialog');
 const addressForm = document.getElementById('address-form');
 const confirmDialog = document.getElementById('confirm-dialog');
+if (PORTFOLIO_DEMO) {
+  for (const form of [profileForm, passwordForm]) {
+    form.querySelectorAll('input, select, textarea, button').forEach(field => { field.disabled = true; });
+  }
+  addBtn.disabled = true;
+}
 
 // ข้อความแจ้งล่าสุด เก็บเป็นฟังก์ชันไว้วาดใหม่ตอนสลับภาษา
 let pageAlertText = null;

@@ -10,6 +10,18 @@ applyI18n();
 
 const form = document.getElementById('login-form');
 const notice = document.getElementById('login-notice');
+const demoAccount = document.getElementById('demo-account');
+const demoCredentials = {
+  customer: { username: 'customer', password: 'Customer@1234' },
+  staff: { username: 'staff', password: 'Staff@1234' },
+};
+function fillDemoAccount() {
+  const account = demoCredentials[demoAccount.value];
+  form.elements.username.value = account.username;
+  form.elements.password.value = account.password;
+}
+demoAccount.addEventListener('change', fillDemoAccount);
+fillDemoAccount();
 
 // มาจากหน้าตั้งรหัสใหม่สำเร็จ
 if (new URLSearchParams(window.location.search).get('reset') === '1') {
@@ -29,7 +41,7 @@ form.addEventListener('submit', (event) => {
       const { data } = await api.post('/auth/login', { username, password });
       auth.setToken(data.token);
       if (data.user.is_admin) {
-        window.location.href = safeNext('/admin/products');
+        window.location.href = safeNext('/admin/orders');
       } else if (!data.user.is_email_verified) {
         window.location.href = `/verify-email?next=${encodeURIComponent(safeNext('/'))}`;
       } else {

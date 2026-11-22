@@ -31,6 +31,7 @@ app.use(
 app.use(express.json({ limit: '1mb', verify(req, res, buffer) {
   if (req.originalUrl.split('?')[0] === '/api/payments/omise/webhook') req.rawBody = buffer;
 } }));
+app.use(require('./middleware/portfolioDemo'));
 app.post('/api/payments/omise/webhook', require('./modules/orders/payments.controller').webhook);
 
 // ---------- Health check ----------

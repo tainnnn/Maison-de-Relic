@@ -1,0 +1,54 @@
+name: maison-portfolio
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: portfolio
+      POSTGRES_PASSWORD: ${PORTFOLIO_DB_PASSWORD:?Set PORTFOLIO_DB_PASSWORD in portfolio.env}
+      POSTGRES_DB: maison_portfolio
+    volumes:
+      - portfolio-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portfolio -d maison_portfolio"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORTFOLIO_DEMO: 'true'
+      PORT: 3000
+      DATABASE_URL: postgres://portfolio:${PORTFOLIO_DB_PASSWORD}@db:5432/maison_portfolio
+      JWT_SECRET: ${PORTFOLIO_JWT_SECRET:?Set PORTFOLIO_JWT_SECRET in portfolio.env}
+      ALLOWED_ORIGINS: ${PORTFOLIO_PUBLIC_URL:-http://localhost:5510}
+      APP_URL: ${PORTFOLIO_PUBLIC_URL:-http://localhost:5510}
+      TRUST_PROXY: '1'
+    command: sh -c "npm run db:migrate && npm run db:seed && node src/server.js"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${PORTFOLIO_WEB_PORT:-5510}:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./docker/portfolio-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  portfolio-db:

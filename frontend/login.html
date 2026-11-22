@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Bodoni+Moda:opsz,wght@6..96,400..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/pages/auth.css">
+  <link rel="stylesheet" href="/css/portfolio-demo.css">
 </head>
 <body>
   <header id="site-header"></header>
@@ -19,6 +20,13 @@
          ผู้รับผิดชอบ: R2 -->
     <section class="card auth-card">
       <h1 data-i18n="login.title">เข้าสู่ระบบ</h1>
+      <p class="portfolio-demo-note">Portfolio demo: select a test account and sign in. Account creation and other non-demo changes are disabled.</p>
+      <label class="portfolio-demo-account" for="demo-account">Test account
+        <select id="demo-account">
+          <option value="customer">Customer — Cart, Checkout, Orders</option>
+          <option value="staff">Staff — Admin Orders</option>
+        </select>
+      </label>
       <div id="login-notice" class="alert alert-success" role="status" hidden></div>
       <form id="login-form" novalidate>
         <div class="alert alert-error" data-form-alert role="alert" hidden></div>
@@ -35,8 +43,7 @@
         <button class="btn btn-primary" type="submit" data-i18n="login.submit">เข้าสู่ระบบ</button>
       </form>
       <div class="auth-links">
-        <a href="/forgot-password" data-i18n="login.forgot">ลืมรหัสผ่าน?</a>
-        <a href="/register" data-i18n="login.register">สมัครสมาชิก</a>
+        <span>Demo accounts are prefilled. Registration and password reset are disabled.</span>
       </div>
     </section>
   </main>

@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+portfolio.env
 
 # log / OS / editor
 npm-debug.log*

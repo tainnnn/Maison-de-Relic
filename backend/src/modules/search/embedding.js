@@ -42,6 +42,7 @@ function isModelReady() {
 // เริ่มโหลดโมเดลไว้เบื้องหลัง (ไม่รอ) — เรียกตอน server เปิด และตอนมีคนค้นแต่โมเดลยังไม่พร้อม
 // โหลดพังแค่ log ไว้ ไม่ทำให้ server ล้ม · เพิ่งพังไม่ถึง 1 นาที → ยังไม่ลองใหม่
 function warmUpModel() {
+  if (process.env.PORTFOLIO_DEMO === 'true') return;
   if (ready || embedderPromise || Date.now() - lastFailedAt < RETRY_AFTER_MS) return;
   getEmbedder()
     .then(() => console.log('[embedding] โหลดโมเดลเสร็จ semantic search พร้อมใช้'))

@@ -52,6 +52,6 @@ function startWorker({ dispatcher = createDispatcher(), intervalMs = 1000, batch
   return async function stop() { stopped = true; clearInterval(timer); await running; };
 }
 function createRuntimeDispatcher({ production = isProduction, ...options } = {}) {
-  return createDispatcher({...options,allowTestEvents:!production});
+  return createDispatcher({...options,allowTestEvents:!production || process.env.PORTFOLIO_DEMO === 'true'});
 }
 module.exports = { createDispatcher, createRuntimeDispatcher, startWorker };
