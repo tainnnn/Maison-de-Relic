@@ -8,7 +8,7 @@ Maison de Relic is a collectibles storefront built as a five-person project for 
 
 Explore the [team architecture](docs/architecture.png), [API documentation](docs/api.md), and [wireframe guide](docs/wireframe.md).
 
-For the online, browser-only portfolio demo, use the [Vercel demo guide](docs/portfolio/vercel-deploy.md). Cart, simulated payment, and orders persist in each visitor's browser, without a hosted API or database.
+**[Try the live portfolio demo](https://maison-de-relic-demo.vercel.app/)** · [Deployment and test guide](docs/portfolio/vercel-deploy.md). Cart, simulated payment, and orders persist in each visitor's browser, without a hosted API or database.
 
 ## Team credits
 
@@ -50,7 +50,7 @@ Checkout includes **only the selected cart items**. The customer chooses an addr
 
 Payments support **Omise Test PromptPay QR** and **Omise Test TrueMoney Wallet**. The backend creates a payment attempt and independently checks its status with Omise. A `pending` attempt creates no order; a `failed` attempt deducts no stock; a `successful` attempt creates the order and deducts stock. Rechecking the same attempt returns the existing order rather than creating another one. Payment test controls are available only in development.
 
-When both Omise keys are absent, the isolated **portfolio demo** uses offline payment even though its server runs with production security settings. It creates a demo order in its own database but does not collect money. The original team implementation also supports Omise Test; live payments and credit cards are outside this portfolio deployment.
+The **online portfolio demo** simulates PromptPay and TrueMoney entirely in the visitor's browser. The separate local Docker setup uses offline payment through its own API and database when both Omise keys are absent. Neither demo collects money. The original team implementation supports Omise Test; live payments and credit cards are outside this portfolio deployment.
 
 **Checkout APIs:** `POST /api/orders/quotes`, `POST /api/orders/payment-attempts`, `GET /api/orders/payment-attempts/:attemptId`, and `POST /api/orders/payment-attempts/:attemptId/sync`. The offline demo flow also uses `POST /api/orders` when enabled. Request and response details are in the [API contract](docs/api.md).
 
@@ -95,6 +95,10 @@ Staff can search by order ID, recipient, or tracking number; filter by status; c
 
 The server recalculates prices, checks stock, and verifies payment before creating an order. Order creation, order items, stock deduction, and status logging run in a database transaction. Repeated payment confirmation must not create or charge an order twice. Status updates check the current state and version to avoid overwriting another staff member's changes.
 
+## Try the live browser demo
+
+Open [maison-de-relic-demo.vercel.app](https://maison-de-relic-demo.vercel.app/), select **Customer** on `/login`, then open a product, add it to Cart, and complete the simulated checkout. The order appears in `/orders`. Sign out, select **Staff**, and use `/admin/orders` to move it through packing, shipped, and delivered. Return as Customer to confirm receipt. This works in one browser: inventory and orders are stored in that browser's `localStorage` and are not shared with other visitors or devices. Clearing the site's browser storage starts a fresh demo. No PostgreSQL, Omise, or account registration is needed online.
+
 ## Run and review locally
 
 This portfolio copy uses its **own Docker project and database**. It never connects to the original team's database or Omise account. Install Docker Desktop, copy `portfolio.env.example` to `portfolio.env`, and replace both placeholder secrets with different long random values. Then run from this repository root:
@@ -105,11 +109,11 @@ docker compose --env-file portfolio.env -f compose.portfolio.yml up -d --build
 
 The frontend is at `http://localhost:5510`, and the proxied API health check is at `http://localhost:5510/api/health`. To inspect the sample screens without signing in, append these paths to the frontend URL: `/cart?preview=1`, `/checkout?preview=1`, `/orders?preview=1`, `/order-detail?preview=1&id=PREVIEW-1006`, and `/admin/orders?preview=1`. Use the header theme button to switch to dark mode.
 
-The sign-in form pre-fills a seeded **Customer** account; switch its account selector to **Staff** to test admin fulfillment. Cart, Checkout, Orders, and Admin Orders work against the isolated database. Wishlist, Reviews, Refunds, Support, Events, and Sales can also use that demo data. Registration, password reset, profile and address editing, account administration, catalog editing, and uploads are disabled. The Team page retains its layout and credits but uses blank gradient placeholders instead of personal portraits. Public demo accounts share data, so use sample information only; visitors may see changes made by earlier visitors. To stop only this portfolio stack, run `docker compose --env-file portfolio.env -f compose.portfolio.yml down`.
+The sign-in form pre-fills a seeded **Customer** account; switch its account selector to **Staff** to test admin fulfillment. In this local Docker setup, Cart, Checkout, Orders, and Admin Orders work against the isolated database. Wishlist, Reviews, Refunds, Support, Events, and Sales can also use that local data. Registration, password reset, profile and address editing, account administration, catalog editing, and uploads are disabled. The Team page retains its layout and credits but uses blank gradient placeholders instead of personal portraits. Local demo accounts share the isolated database, so use sample information only. To stop only this portfolio stack, run `docker compose --env-file portfolio.env -f compose.portfolio.yml down`.
 
 If the shared sample inventory is depleted, the owner can reset **only the portfolio database** with `docker compose --env-file portfolio.env -f compose.portfolio.yml down -v` and then run the startup command again. This deletes all portfolio demo orders and changes.
 
-For deployment on a Docker host, set `PORTFOLIO_PUBLIC_URL` to the site's HTTPS origin and route that origin to the portfolio web container. Keep `portfolio.env` private. This is a self-hosted frontend and API; a static-only host cannot run the authenticated checkout flow.
+For optional deployment of the local API-backed version on a Docker host, set `PORTFOLIO_PUBLIC_URL` to its HTTPS origin and route that origin to the portfolio web container. Keep `portfolio.env` private. The Vercel link above uses the separate browser-only demo.
 
 For a full backend walkthrough with local accounts, products, expected results, and failure cases, see the [R5 demo test cases](docs/testing/r5/README.md). The team also provides a [setup guide](docs/setup.md) and [complete API documentation](docs/api.md). **Never commit `portfolio.env`, `.env` files, or Omise secret keys.**
 

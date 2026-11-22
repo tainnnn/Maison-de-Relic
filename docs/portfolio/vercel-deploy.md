@@ -1,5 +1,7 @@
 # Deploy the browser-only portfolio demo on Vercel
 
+**Live site:** [maison-de-relic-demo.vercel.app](https://maison-de-relic-demo.vercel.app/)
+
 Import `tainnnn/Maison-de-Relic` as a **new** Vercel project under the personal account. Keep Root Directory at the repository root and Framework Preset at Other. The checked-in `vercel.json` builds `frontend/` into `public/` and enables the browser demo in the copied configuration. No Vercel environment variables, API service, database, Omise account, or email service are needed.
 
 ## What visitors can try
