@@ -9,7 +9,8 @@
 //     if (err instanceof ApiError && err.code === 'PRODUCT_NOT_FOUND') { ... }
 //     showError(err.message);   // ข้อความภาษาไทยจาก backend
 //   }
-import { API_BASE } from './config.js';
+import { API_BASE, BROWSER_DEMO } from './config.js';
+import { browserDemoRequest } from './browser-demo.js';
 
 const TOKEN_KEY = 'mdr_token';
 
@@ -62,6 +63,13 @@ function buildUrl(path, params) {
 }
 
 async function request(method, path, { params, body, keepalive = false } = {}) {
+  if (BROWSER_DEMO) {
+    try { return await browserDemoRequest(method, path, { params, body, token: auth.getToken() }); }
+    catch (err) {
+      if (err.status === 401) auth.clear();
+      throw new ApiError(err.status || 500, err.code || 'BROWSER_DEMO_ERROR', err.message);
+    }
+  }
   const headers = { Accept: 'application/json' };
   const token = auth.getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
