@@ -8,6 +8,8 @@ Maison de Relic is a collectibles storefront built as a five-person project for 
 
 Explore the [team architecture](docs/architecture.png), [API documentation](docs/api.md), and [wireframe guide](docs/wireframe.md).
 
+For a separate online portfolio deployment, use the [Vercel demo guide](docs/portfolio/vercel-deploy.md). It requires an independent PostgreSQL database; the original team deployment serves only the static frontend.
+
 ## Team credits
 
 This is a collaborative project. This README focuses on the **R5 features I owned** and identifies the systems built by my teammates that those features use.

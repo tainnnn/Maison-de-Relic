@@ -20,7 +20,9 @@ app.use(
       if (!origin) return callback(null, true);
       const allowed =
         env.allowedOrigins.includes(origin) ||
-        (env.allowedOriginRegex && env.allowedOriginRegex.test(origin));
+        (env.allowedOriginRegex && env.allowedOriginRegex.test(origin)) ||
+        (env.portfolioDemo && [process.env.VERCEL_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+          .filter(Boolean).some(host => origin === `https://${host}`));
       return allowed
         ? callback(null, true)
         : callback(new Error(`CORS: ไม่อนุญาต origin ${origin}`));

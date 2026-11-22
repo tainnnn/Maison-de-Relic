@@ -1,7 +1,10 @@
 {
-  "name": "maison-de-relic",
+  "name": "maison-de-relic-portfolio",
+  "version": "1.0.0",
   "private": true,
-  "description": "เว็บร้านของสะสม Maison de Relic — โครงงานวิชา ITDS241/242 (คำสั่งลัดของ docker compose)",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "docker compose up --build",
     "down": "docker compose down",
@@ -10,6 +13,16 @@
     "db:migrate": "docker compose exec api npm run db:migrate",
     "db:seed": "docker compose exec api npm run db:seed",
     "db:reset": "docker compose exec api npm run db:reset",
-    "test": "docker compose exec api npm test"
+    "test": "docker compose exec api npm test",
+    "build": "node scripts/build-portfolio-vercel.cjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.1.4",
+    "pg": "^8.13.0"
   }
 }
